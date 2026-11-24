@@ -21,7 +21,7 @@ For a guided tour of the code, read [docs/KERNEL.md](docs/KERNEL.md) first, then
 - **Resume and stop.** The K/V cache stays in HBM between calls (`start_pos`), so a chat only computes the new tokens, and the kernel stops at the
   end-of-turn token.
 
-## Results (same 45-position prompt, 6 prompt + 39 generated; tokens identical in every build)
+## Results (same 45-position run: 6 prompt + 40 generated tokens; tokens identical in every build)
 
 | Build | Ports x lanes | Kernel clock | Positions/s | Speedup |
 |---|---|---|---|---|
