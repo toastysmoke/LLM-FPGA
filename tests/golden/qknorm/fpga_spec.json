@@ -1,0 +1,137 @@
+{
+  "hardware": {
+    "dimensions": {
+      "layers": 4,
+      "hidden": 256,
+      "heads": 8,
+      "kv_heads": 4,
+      "head_dim": 32,
+      "ffn": 512,
+      "vocab": 1000,
+      "ctx": 512
+    },
+    "matmul_engines": [
+      {
+        "role": "attn_q",
+        "out": 256,
+        "in": 256,
+        "count": 4,
+        "weight_dtypes": {
+          "BF16": 4
+        }
+      },
+      {
+        "role": "attn_k",
+        "out": 128,
+        "in": 256,
+        "count": 4,
+        "weight_dtypes": {
+          "BF16": 4
+        }
+      },
+      {
+        "role": "attn_v",
+        "out": 128,
+        "in": 256,
+        "count": 4,
+        "weight_dtypes": {
+          "BF16": 4
+        }
+      },
+      {
+        "role": "attn_o",
+        "out": 256,
+        "in": 256,
+        "count": 4,
+        "weight_dtypes": {
+          "BF16": 4
+        }
+      },
+      {
+        "role": "ffn_gate",
+        "out": 512,
+        "in": 256,
+        "count": 4,
+        "weight_dtypes": {
+          "BF16": 4
+        }
+      },
+      {
+        "role": "ffn_up",
+        "out": 512,
+        "in": 256,
+        "count": 4,
+        "weight_dtypes": {
+          "BF16": 4
+        }
+      },
+      {
+        "role": "ffn_down",
+        "out": 256,
+        "in": 512,
+        "count": 4,
+        "weight_dtypes": {
+          "BF16": 4
+        }
+      }
+    ],
+    "max_matmul_in": 512,
+    "max_matmul_out": 512,
+    "norm": {
+      "kind": "RMSNorm",
+      "dim": 256,
+      "eps": 1e-05,
+      "has_bias": false,
+      "per_layer_count": 2.25
+    },
+    "qk_norm": true,
+    "activation": {
+      "fn": "silu",
+      "gated": true,
+      "ffn_pattern": "gate/up -> act(gate)*up -> down"
+    },
+    "rope": {
+      "theta": 10000.0,
+      "rotary_dim": 32,
+      "scaling": null,
+      "full_table_entries_sin_cos": 16384
+    },
+    "attention": {
+      "heads": 8,
+      "kv_heads": 4,
+      "head_dim": 32,
+      "gqa_group": 2,
+      "sliding_window": null,
+      "softmax_len_max": 512,
+      "kv_cache_bytes_per_token_16bit": 2048
+    },
+    "embedding_lookup": {
+      "vocab": 1000,
+      "dim": 256,
+      "tied_with_lm_head": true
+    },
+    "moe": null,
+    "other_units": [
+      "residual add",
+      "final norm",
+      "lm_head matmul + argmax/sampling"
+    ],
+    "precision": {
+      "weight_dtypes_by_bytes": {
+        "BF16": 5230592
+      },
+      "max_bits_per_weight": 16.0,
+      "trained_dtype": "bfloat16",
+      "quantization": null,
+      "activation_precision": "not stored in the model - your choice",
+      "float_note": "float weights: multipliers + accumulator width are your choice; FP32/wide fixed-point accumulate is the safe default"
+    },
+    "notes": [],
+    "unclassified_tensors": []
+  },
+  "generated_tables": [
+    "rope sin/cos table (generated from theta, not in the model file)",
+    "activation lookup/approximation table",
+    "exp table for softmax"
+  ]
+}

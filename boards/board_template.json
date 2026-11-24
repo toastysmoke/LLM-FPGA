@@ -1,0 +1,27 @@
+{
+  "_name": "optional",
+  "name": "my board",
+
+  "bram36": 480,
+
+  "_uram": "optional",
+  "uram": 64,
+
+  "ext_gb": 1.0,
+
+  "_dsp": "optional: DSP slices on the FPGA (needed by kernel_plan.py)",
+  "dsp": 1824,
+
+  "_lut_ff": "optional: LUTs and flip-flops on the FPGA (kernel_plan.py then also keeps the kernel within them)",
+  "lut": 216960,
+  "ff": 433920,
+
+  "_clock_mhz": "optional: kernel clock in MHz (kernel_plan.py assumes 50 when missing)",
+  "clock_mhz": 50,
+
+  "_mem_gbps": "optional: peak external memory bandwidth in GB/s (kernel_plan.py then warns when memory limits the speed)",
+  "mem_gbps": 4.8,
+
+  "_max_ports": "optional: how many weight ports (independent AXI connections to the memory) the kernel may use, 1 to 4; kernel_plan.py assumes 1 when missing",
+  "max_ports": 4
+}

@@ -1,0 +1,94 @@
+safetensors | llama | 22 layers, hidden 2048, 32h/4kv x 64, ffn 5632, vocab 32000
+
+BUILD IN FPGA
+  matmul attn_k       256 x 2048  x22  {'BF16': 22}
+  matmul attn_o       2048 x 2048  x22  {'BF16': 22}
+  matmul attn_q       2048 x 2048  x22  {'BF16': 22}
+  matmul attn_v       256 x 2048  x22  {'BF16': 22}
+  matmul ffn_down     2048 x 5632  x22  {'BF16': 22}
+  matmul ffn_gate     5632 x 2048  x22  {'BF16': 22}
+  matmul ffn_up       5632 x 2048  x22  {'BF16': 22}
+  matmul lm_head      32000 x 2048  x1  {'BF16': 1}
+  norm: RMSNorm (dim 2048, bias=False)  qk_norm=False
+  activation: silu (gated)
+  rope: {'theta': 10000.0, 'rotary_dim': 64, 'scaling': None, 'full_table_entries_sin_cos': 131072}
+  attention: {'heads': 32, 'kv_heads': 4, 'head_dim': 64, 'gqa_group': 8, 'sliding_window': None, 'softmax_len_max': 2048, 'kv_cache_bytes_per_token_16bit': 22528}
+  precision: {'weight_dtypes_by_bytes': {'BF16': 2199912448}, 'max_bits_per_weight': 16.0, 'trained_dtype': 'bfloat16', 'quantization': None, 'activation_precision': 'not stored in the model - your choice', 'float_note': 'float weights: multipliers + accumulator width are your choice; FP32/wide fixed-point accumulate is the safe default'}
+
+STORE IN MEMORY
+  2098.18 MB total | {'external_lookup': 125.0, 'onchip_candidate': 0.176, 'external_stream': 1973.0}
+  generated (not in file): rope sin/cos table (generated from theta, not in the model file); activation lookup/approximation table; exp table for softmax
+
+MEMORY PLAN
+  target small-board | SRAM 3.875 MB x 85% usable = 3.294 MB | external 1024.000 MB @ 3.2 GB/s peak | context 512 (traffic at 512) | priority auto
+  class           total     on-chip    external
+  scratch      0.108 MB    0.108 MB    0.000 MB
+  tables       0.133 MB    0.010 MB    0.123 MB
+  norms        0.176 MB    0.176 MB    0.000 MB
+  kv          22.000 MB    3.000 MB   19.000 MB
+  lm_head    125.000 MB    0.000 MB  125.000 MB
+  embed      125.000 MB    0.000 MB  125.000 MB
+  layers    1848.000 MB    0.000 MB 1848.000 MB
+  state        0.124 MB    0.000 MB    0.124 MB
+  SRAM used 3.294 MB | external used 2117.247 MB (fits: False)
+  split: table.rope_sin_cos: first 41 of 512 rows on-chip, rest external
+  per token: external 1992.163 MB (read 1992.004, write 0.159) | on-chip reads 3.176 MB
+  ceilings: compute 0.02 tok/s | external bandwidth 1.07 tok/s -> limit: compute (0.02 tok/s)
+  PLAN NOTE: external data does not fit the external memory capacity
+
+SWEEP  usable SRAM -> what moves on-chip (priority auto)
+   SRAM MB  weights on-chip  ext MB/token  bandwidth tok/s  compute tok/s  limit
+         0             0.0%      1995.345             1.07           0.02  compute
+       0.5             0.0%      1994.954             1.07           0.02  compute
+         1             0.0%      1994.454             1.07           0.02  compute
+         2             0.0%      1993.452             1.07           0.02  compute
+         4             0.0%      1991.448             1.07           0.02  compute
+         8             0.0%      1987.441             1.07           0.02  compute
+        16             0.0%      1979.425             1.08           0.02  compute
+        32             0.5%      1963.411             1.09           0.02  compute
+        64             2.0%      1931.411             1.11           0.02  compute
+       128             5.0%      1867.411             1.14           0.02  compute
+       256            11.1%      1739.411             1.23           0.02  compute
+
+SIZING  target 10.0 tok/s at 100.0 MHz, units busy 70% of cycles, context 512
+  unit                                           ops/token    share    needed instances
+  matrix engine (weight MACs)                1,034,420,224   95.54%    147.77       148
+  attention (score + value MACs)                46,137,344    4.26%      6.59         7
+  multiplier (norm, SiLU, RoPE, softmax)           986,112    0.09%      0.14         1
+  adder (residual, sums)                           593,408    0.05%      0.08         1
+  exponential unit                                 484,352    0.04%      0.07         1
+  divide / reciprocal                              124,608    0.01%      0.02         1
+  reciprocal sqrt (norm)                                45    0.00%      0.00         1
+  (an 'instance' = a unit that finishes one operation per clock cycle; 'needed' = ops per second / clock / utilization)
+  memory side: 1,973.0 MB of weights (16-bit) + 22.0 MB of KV cache read per token; 22.4 bytes/cycle available -> at most 11 weight lanes can be fed, ceiling 1.07 tok/s
+  -> MEMORY-BOUND: the target needs 148 matrix lanes but memory can feed only 11; more lanes would sit idle
+  rough DSP estimate: 320 of 1824 on the small-board (matrix+attention lanes x 2 DSP per MAC, exponential 7 each, multipliers 3 each)
+  -> duplicate: matrix engine (weight MACs), attention (score + value MACs) | one instance is enough for: multiplier (norm, SiLU, RoPE, softmax), adder (residual, sums), exponential unit, divide / reciprocal, reciprocal sqrt (norm)
+  reference: the current llm_top kernel does a weight MAC every 4.5 cycles = 0.22 lane-equivalents
+
+SCHEDULE  what one token goes through (context 512, 16-bit weights); 'x N' = repeated for each of the 22 layers
+  #   step                                  unit            shape                             ops (dominant kind)      x  weight MB  cache MB  on-chip
+  E1  embedding lookup (one row)            table lookup    32000 x 2048                      -                               0.004         -       0%
+  L1  input RMSNorm                         norm            2048                              6,144 mult             x22      0.004         -     100%
+  L2  query projection                      matrix engine   2048 x 2048                       4,194,304 mac          x22      8.000         -       0%
+  L3  key projection                        matrix engine   256 x 2048                        524,288 mac            x22      1.000         -       0%
+  L4  value projection                      matrix engine   256 x 2048                        524,288 mac            x22      1.000         -       0%
+  L6  RoPE on queries and keys              RoPE            32+4 heads x 32 pairs             4,608 mult             x22          -         -         
+  L7  write new key and value to cache      KV cache write  4 heads x 64 x 2                  -                      x22          -     0.002      14%
+  L8  attention scores q . cached keys      attention       32 heads x 64 x 512 positions     1,048,576 mac          x22          -     0.500      14%
+  L9  softmax over positions                softmax         32 heads x 512 positions          16,384 exp             x22          -         -         
+  L10 weighted sum of cached values         attention       32 heads x 64 x 512 positions     1,048,576 mac          x22          -     0.500      14%
+  L11 attention output projection           matrix engine   2048 x 2048                       4,194,304 mac          x22      8.000         -       0%
+  L12 residual add                          adder           2048                              2,048 add              x22          -         -         
+  L13 post-attention RMSNorm                norm            2048                              6,144 mult             x22      0.004         -     100%
+  L14 feed-forward gate projection          matrix engine   5632 x 2048                       11.5M mac              x22     22.000         -       0%
+  L15 feed-forward up projection            matrix engine   5632 x 2048                       11.5M mac              x22     22.000         -       0%
+  L16 SILU activation x up                  activation      5632                              11,264 mult            x22          -         -         
+  L17 feed-forward down projection          matrix engine   2048 x 5632                       11.5M mac              x22     22.000         -       0%
+  L18 residual add                          adder           2048                              2,048 add              x22          -         -         
+  F1  final RMSNorm                         norm            2048                              6,144 mult                      0.004         -     100%
+  F2  output head (score every word)        matrix engine   32000 x 2048                      65.5M mac                     125.000         -       0%
+  F3  pick the next word                    argmax          32000                             32,000 cmp                          -         -         
+  per token totals: 1,080.6M mac, 986,112 mult, 593,408 add, 484,352 exp, 124,608 div, 32,000 cmp, 45 rsqrt | weights read 1,973.2 MB | KV cache read 22.0 MB
+
+wrote tests\golden\tinyllama/fpga_spec.json, memory_map.json, model_params.vh, memory_plan.vh, schedule.json

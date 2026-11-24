@@ -1,0 +1,357 @@
+{
+  "context": 512,
+  "layers": 2,
+  "weight_bits": 16.0,
+  "steps": [
+    {
+      "tag": "E1",
+      "step": "embedding lookup (one row)",
+      "unit": "table lookup",
+      "shape": "256 x 64",
+      "ops": {},
+      "repeat": 1,
+      "weight_bytes": 128.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L1",
+      "step": "input RMSNorm",
+      "unit": "norm",
+      "shape": "64",
+      "ops": {
+        "mult": 192,
+        "add": 64,
+        "rsqrt": 1
+      },
+      "repeat": 2,
+      "weight_bytes": 128.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L2",
+      "step": "query projection",
+      "unit": "matrix engine",
+      "shape": "64 x 64",
+      "ops": {
+        "mac": 4096
+      },
+      "repeat": 2,
+      "weight_bytes": 8192.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L3",
+      "step": "key projection",
+      "unit": "matrix engine",
+      "shape": "32 x 64",
+      "ops": {
+        "mac": 2048
+      },
+      "repeat": 2,
+      "weight_bytes": 4096.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L4",
+      "step": "value projection",
+      "unit": "matrix engine",
+      "shape": "32 x 64",
+      "ops": {
+        "mac": 2048
+      },
+      "repeat": 2,
+      "weight_bytes": 4096.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L6",
+      "step": "RoPE on queries and keys",
+      "unit": "RoPE",
+      "shape": "4+2 heads x 8 pairs",
+      "ops": {
+        "mult": 192,
+        "add": 96
+      },
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": null,
+      "note": ""
+    },
+    {
+      "tag": "L7",
+      "step": "write new key and value to cache",
+      "unit": "KV cache write",
+      "shape": "2 heads x 16 x 2",
+      "ops": {},
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 256,
+      "on_chip_fraction": 1.0,
+      "note": "write"
+    },
+    {
+      "tag": "L8",
+      "step": "attention scores q . cached keys",
+      "unit": "attention",
+      "shape": "4 heads x 16 x 512 positions",
+      "ops": {
+        "mac": 32768
+      },
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 65536,
+      "on_chip_fraction": 1.0,
+      "note": "reads the key cache"
+    },
+    {
+      "tag": "L9",
+      "step": "softmax over positions",
+      "unit": "softmax",
+      "shape": "4 heads x 512 positions",
+      "ops": {
+        "exp": 2048,
+        "mult": 2048,
+        "add": 2048,
+        "div": 4
+      },
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": null,
+      "note": ""
+    },
+    {
+      "tag": "L10",
+      "step": "weighted sum of cached values",
+      "unit": "attention",
+      "shape": "4 heads x 16 x 512 positions",
+      "ops": {
+        "mac": 32768
+      },
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 65536,
+      "on_chip_fraction": 1.0,
+      "note": "reads the value cache"
+    },
+    {
+      "tag": "L11",
+      "step": "attention output projection",
+      "unit": "matrix engine",
+      "shape": "64 x 64",
+      "ops": {
+        "mac": 4096
+      },
+      "repeat": 2,
+      "weight_bytes": 8192.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L12",
+      "step": "residual add",
+      "unit": "adder",
+      "shape": "64",
+      "ops": {
+        "add": 64
+      },
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": null,
+      "note": ""
+    },
+    {
+      "tag": "L13",
+      "step": "post-attention RMSNorm",
+      "unit": "norm",
+      "shape": "64",
+      "ops": {
+        "mult": 192,
+        "add": 64,
+        "rsqrt": 1
+      },
+      "repeat": 2,
+      "weight_bytes": 128.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L14",
+      "step": "feed-forward gate projection",
+      "unit": "matrix engine",
+      "shape": "128 x 64",
+      "ops": {
+        "mac": 8192
+      },
+      "repeat": 2,
+      "weight_bytes": 16384.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L15",
+      "step": "feed-forward up projection",
+      "unit": "matrix engine",
+      "shape": "128 x 64",
+      "ops": {
+        "mac": 8192
+      },
+      "repeat": 2,
+      "weight_bytes": 16384.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L16",
+      "step": "SILU activation x up",
+      "unit": "activation",
+      "shape": "128",
+      "ops": {
+        "exp": 128,
+        "div": 128,
+        "mult": 256
+      },
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": null,
+      "note": ""
+    },
+    {
+      "tag": "L17",
+      "step": "feed-forward down projection",
+      "unit": "matrix engine",
+      "shape": "64 x 128",
+      "ops": {
+        "mac": 8192
+      },
+      "repeat": 2,
+      "weight_bytes": 16384.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "L18",
+      "step": "residual add",
+      "unit": "adder",
+      "shape": "64",
+      "ops": {
+        "add": 64
+      },
+      "repeat": 2,
+      "weight_bytes": 0.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": null,
+      "note": ""
+    },
+    {
+      "tag": "F1",
+      "step": "final RMSNorm",
+      "unit": "norm",
+      "shape": "64",
+      "ops": {
+        "mult": 192,
+        "add": 64,
+        "rsqrt": 1
+      },
+      "repeat": 1,
+      "weight_bytes": 128.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "F2",
+      "step": "output head (tied to the embedding)",
+      "unit": "matrix engine",
+      "shape": "256 x 64",
+      "ops": {
+        "mac": 16384
+      },
+      "repeat": 1,
+      "weight_bytes": 32768.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": 1.0,
+      "note": ""
+    },
+    {
+      "tag": "F3",
+      "step": "pick the next word",
+      "unit": "argmax",
+      "shape": "256",
+      "ops": {
+        "cmp": 256
+      },
+      "repeat": 1,
+      "weight_bytes": 0.0,
+      "cache_bytes": 0.0,
+      "on_chip_fraction": null,
+      "note": ""
+    }
+  ],
+  "notes": [],
+  "totals_per_token": {
+    "ops_by_kind": {
+      "mult": 5952,
+      "add": 4864,
+      "rsqrt": 5,
+      "mac": 221184,
+      "exp": 4352,
+      "div": 264,
+      "cmp": 256
+    },
+    "ops_by_unit": {
+      "norm": {
+        "mult": 960,
+        "add": 320,
+        "rsqrt": 5
+      },
+      "matrix engine": {
+        "mac": 90112
+      },
+      "RoPE": {
+        "mult": 384,
+        "add": 192
+      },
+      "attention": {
+        "mac": 131072
+      },
+      "softmax": {
+        "exp": 4096,
+        "mult": 4096,
+        "add": 4096,
+        "div": 8
+      },
+      "adder": {
+        "add": 256
+      },
+      "activation": {
+        "exp": 256,
+        "div": 256,
+        "mult": 512
+      },
+      "argmax": {
+        "cmp": 256
+      }
+    },
+    "weight_bytes_read": 180992,
+    "kv_cache_bytes_read": 262144
+  }
+}

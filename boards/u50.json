@@ -1,0 +1,58 @@
+{
+  "_name": "optional",
+  "name": "Alveo U50 (xcu50 / VU35P, 8 GB HBM2, Vitis shell xdma_base_5)",
+  "_note": "Written 2026-11-13 from the public U50 data sheet, NOT measured. Device totals; the Vitis shell takes part of them, so the real free amounts are lower. Check with the v++ utilization report.",
+  "bram36": 1344,
+  "_uram": "optional",
+  "uram": 640,
+  "ext_gb": 8.0,
+  "_dsp": "optional: DSP slices on the FPGA (needed by kernel_plan.py)",
+  "dsp": 5952,
+  "_lut_ff": "optional: LUTs and flip-flops on the FPGA",
+  "lut": 872000,
+  "ff": 1743000,
+  "_clock_mhz": "ESTIMATE from HLS C-synthesis (8.0 ns, with ACC_DEPTH/VEC_SUMS=4), 2026-11-13; accepted as the target. Not measured after place and route",
+  "clock_mhz": 125,
+  "_mem_gbps": "2026-11-15: the old guess of 20 GB/s was too low: the 8x16 build on the card reads stories15M's 60.8 MB at 408 tokens/s = 24.8 GB/s of weights, and that is a LOWER bound (the kernel was not memory-limited). With one HBM range per port each 512-bit port can stream 512 bits x clock (about 8 GB/s at 125 MHz) and HBM peaks at 316 GB/s over 32 pseudo-channels, so 100 is a placeholder that keeps the memory limit out of the way until a build proves otherwise.",
+  "mem_gbps": 100,
+  "_max_ports": "kernel supports up to 8 weight ports (LLM_PORTS, since 2026-11-15); HBM could give far more (32 pseudo-channels)",
+  "max_ports": 8,
+  "_calibration": "2026-11-15: fitted on three ROUTED U50 builds of this kernel with stories15M on the card (ports x lanes, attention lanes): 1x1 (a1), 4x16 (a16), 8x16 (a16). resource_model = routed kernel LUT/FF/DSP: 1x1 26,873/32,831/95; 4x16 147,144/189,928/1,102; 8x16 248,275/327,567/1,943 (three points for three coefficients, so no check; the attention-lane term rests on the single A=1 build, whose buffers were also larger). bram_factor: the old BRAM estimate was 3x too high (routed 58, 94, 154 BRAM18); 0.4 keeps it above the 4x16 and 8x16 values; BRAM is not what limits a U50 build. weight_cycles: measured clock cycles per weight word of a port, from the run times: 1x1 2.30, 8x16 (own HBM range per port) 2.54 at the whole-token level; fitted as 1.8 + 0.5/lanes. The 4x16 build, whose four ports all read the SAME four HBM banks, measured 3.6 cycles per word, much worse: give each port its own banks. clock_by_lanes: kernel clock after route (v++ auto-scaled from 300 MHz): 136.3 (1 lane), 132.5 (64), 123.0 (128). Not measured beyond 128 matrix lanes: further points are extrapolated.",
+  "resource_model": {
+    "DSP": [
+      70,
+      13.14,
+      11.9
+    ],
+    "LUT": [
+      23911,
+      1580,
+      1382
+    ],
+    "FF": [
+      29239,
+      2151,
+      1441
+    ],
+    "margin": 1.05,
+    "bram_factor": 0.4
+  },
+  "weight_cycles": [
+    1.8,
+    0.5
+  ],
+  "clock_by_lanes": [
+    [
+      1,
+      136.3
+    ],
+    [
+      64,
+      132.5
+    ],
+    [
+      128,
+      123.0
+    ]
+  ]
+}

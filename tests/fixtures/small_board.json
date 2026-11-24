@@ -1,0 +1,27 @@
+{
+  "_name": "optional",
+  "name": "Small test board (16-bit DDR4, 1 GiB)",
+
+  "bram36": 480,
+
+  "_uram": "optional",
+  "uram": 64,
+
+  "ext_gb": 1.0,
+
+  "_dsp": "optional: DSP slices on the FPGA (needed by kernel_plan.py)",
+  "dsp": 1824,
+
+  "_lut_ff": "optional: LUTs and flip-flops on the FPGA (kernel_plan.py then also keeps the kernel within them)",
+  "lut": 216960,
+  "ff": 433920,
+
+  "_clock_mhz": "optional: kernel clock in MHz (kernel_plan.py assumes 50 when missing); 70 met timing on the board (vivado/build_v5)",
+  "clock_mhz": 70,
+
+  "_mem_gbps": "optional: external memory bandwidth the kernel really gets, in GB/s. Measured streaming weights (2026-10-30): 3.42 with the DDR4 at 2666 MT/s (LLM_DDR4_TCK=750, vivado/build_v6; peak 5.33); 2.66 at the old 1600 MT/s (peak 3.2)",
+  "mem_gbps": 3.42,
+
+  "_max_ports": "optional: how many weight ports (independent AXI connections to the memory) the kernel may use, 1 to 4; kernel_plan.py assumes 1 when missing",
+  "max_ports": 2
+}
